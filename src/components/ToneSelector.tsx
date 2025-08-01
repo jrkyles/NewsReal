@@ -13,19 +13,19 @@ const tones = [
     description: "Formal, objective reporting style"
   },
   {
-    id: "conversational",
-    name: "Conversational",
-    description: "Friendly, approachable tone"
+    id: "funny",
+    name: "Funny",
+    description: "Humorous, entertaining delivery"
   },
   {
-    id: "energetic",
-    name: "Energetic",
-    description: "Upbeat, dynamic delivery"
+    id: "laid-back",
+    name: "Laid Back",
+    description: "Casual, relaxed presentation"
   },
   {
-    id: "calm",
-    name: "Calm",
-    description: "Soothing, relaxed presentation"
+    id: "friendly",
+    name: "Friendly",
+    description: "Warm, approachable tone"
   }
 ];
 

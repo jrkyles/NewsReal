@@ -16,38 +16,13 @@ interface PodcastGeneratorProps {
 export const PodcastGenerator = ({ categories, tone, onAudioGenerated }: PodcastGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [newsApiKey, setNewsApiKey] = useState(
-    import.meta.env.VITE_NEWS_API_KEY || ""
-  );
-  const [openAiApiKey, setOpenAiApiKey] = useState(
-    import.meta.env.VITE_OPENAI_API_KEY || ""
-  );
-  const [elevenLabsApiKey, setElevenLabsApiKey] = useState(
-    import.meta.env.VITE_ELEVEN_LABS_API_KEY || ""
-  );
+  const newsApiKey = import.meta.env.VITE_NEWS_API_KEY;
+  const openAiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const elevenLabsApiKey = import.meta.env.VITE_ELEVEN_LABS_API_KEY;
+  const voiceId = import.meta.env.VITE_ELEVEN_LABS_VOICE_ID;
   const [generatedScript, setGeneratedScript] = useState("");
   const { toast } = useToast();
 
-  useEffect(() => {
-    const storedNews = localStorage.getItem("newsApiKey");
-    const storedOpenAi = localStorage.getItem("openAiApiKey");
-    const storedEleven = localStorage.getItem("elevenLabsApiKey");
-    if (storedNews) setNewsApiKey(storedNews);
-    if (storedOpenAi) setOpenAiApiKey(storedOpenAi);
-    if (storedEleven) setElevenLabsApiKey(storedEleven);
-  }, []);
-
-  useEffect(() => {
-    if (newsApiKey) localStorage.setItem("newsApiKey", newsApiKey);
-  }, [newsApiKey]);
-
-  useEffect(() => {
-    if (openAiApiKey) localStorage.setItem("openAiApiKey", openAiApiKey);
-  }, [openAiApiKey]);
-
-  useEffect(() => {
-    if (elevenLabsApiKey) localStorage.setItem("elevenLabsApiKey", elevenLabsApiKey);
-  }, [elevenLabsApiKey]);
 
   const generatePodcast = async () => {
     if (categories.length === 0) {
@@ -165,7 +140,7 @@ export const PodcastGenerator = ({ categories, tone, onAudioGenerated }: Podcast
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o-mini",
         messages,
         temperature: 0.7,
         max_tokens: 500
@@ -178,56 +153,44 @@ export const PodcastGenerator = ({ categories, tone, onAudioGenerated }: Podcast
     return data.choices[0].message.content.trim();
   };
   const generateAudio = async (script: string, apiKey: string) => {
-    const voiceId = "21m00Tcm4TlvDq8ikWAM";
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: "POST",
       headers: {"xi-api-key": apiKey, "Content-Type": "application/json"},
-      body: JSON.stringify({ text: script, model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.35, similarity_boost: 0.75 } })
+      body: JSON.stringify({ 
+        text: script, 
+        model_id: "eleven_multilingual_v2", 
+        voice_settings: { 
+          stability: 0.35, 
+          similarity_boost: 0.75,
+          style: 0.0,
+          use_speaker_boost: true
+        } 
+      })
     });
-    if (!res.ok) { const err = await res.text(); throw new Error(err); }
+    if (!res.ok) { 
+      const err = await res.text(); 
+      console.error('ElevenLabs API Error:', err);
+      throw new Error(`ElevenLabs API Error: ${err}`); 
+    }
     const blob = await res.blob();
     return URL.createObjectURL(blob);
   };
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="news-api">News API Key</Label>
-          <Input
-            id="news-api"
-            type="password"
-            placeholder="Enter your News API key"
-            value={newsApiKey}
-            onChange={(e) => setNewsApiKey(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Get your free key at newsapi.org
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="openai-api">OpenAI API Key</Label>
-          <Input
-            id="openai-api"
-            type="password"
-            placeholder="Enter your OpenAI API key"
-            value={openAiApiKey}
-            onChange={(e) => setOpenAiApiKey(e.target.value)}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="elevenlabs-api">ElevenLabs API Key</Label>
-          <Input
-            id="elevenlabs-api"
-            type="password"
-            placeholder="Enter your ElevenLabs API key"
-            value={elevenLabsApiKey}
-            onChange={(e) => setElevenLabsApiKey(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Get your key at elevenlabs.io
-          </p>
+      <div className="text-center space-y-2">
+        <p className="text-sm text-muted-foreground">
+          API keys are configured via environment variables
+        </p>
+        <div className="inline-flex items-center space-x-4 text-xs">
+          <span className={newsApiKey ? "text-green-600" : "text-red-600"}>
+            News API: {newsApiKey ? "✓" : "✗"}
+          </span>
+          <span className={openAiApiKey ? "text-green-600" : "text-red-600"}>
+            OpenAI: {openAiApiKey ? "✓" : "✗"}
+          </span>
+          <span className={elevenLabsApiKey ? "text-green-600" : "text-red-600"}>
+            ElevenLabs: {elevenLabsApiKey ? "✓" : "✗"}
+          </span>
         </div>
       </div>
 
