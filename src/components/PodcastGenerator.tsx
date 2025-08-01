@@ -122,14 +122,23 @@ export const PodcastGenerator = ({ categories, tone, onAudioGenerated }: Podcast
       .map((item, idx) => `${idx + 1}. ${item.title} - ${item.description}`)
       .join("\n");
 
+    const toneInstructions = {
+      funny: "You are News Nelson, a witty news anchor with a sharp sense of humor. Use clever wordplay, subtle irony, and tasteful mature humor. Keep jokes sophisticated but accessible. Focus on delivering real news while adding your signature wit.",
+      "laid back": "You are News Nelson, a relaxed and conversational news anchor. Speak like you're chatting with a friend over coffee. Use casual language and a calm, unhurried delivery style.",
+      friendly: "You are News Nelson, a warm and approachable news anchor. Be enthusiastic and positive while maintaining credibility. Make listeners feel like they're getting news from a trusted friend.",
+      professional: "You are News Nelson, a seasoned professional news anchor. Deliver news with authority, clarity, and gravitas. Maintain a formal but engaging tone throughout."
+    };
+
     const messages = [
       {
         role: "system",
-        content: `You are a journalist writing a short podcast script in a ${tone} tone. Summarize and make the stories engaging.`
+        content: `${toneInstructions[tone as keyof typeof toneInstructions]} 
+
+Write a natural, conversational news summary. Include ONLY what News Nelson should say - no stage directions, sound effects, music cues, or script formatting. Just the actual spoken words. Start with a brief greeting, cover the most important stories from each category, and end with a simple sign-off. Keep it between 3-5 minutes of speaking time (about 450-750 words).`
       },
       {
         role: "user",
-        content
+        content: `Please summarize these top news stories: ${content}`
       }
     ];
 
@@ -143,7 +152,7 @@ export const PodcastGenerator = ({ categories, tone, onAudioGenerated }: Podcast
         model: "gpt-4o-mini",
         messages,
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 800
       })
     });
 
