@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Loader2, Timer } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -10,14 +10,16 @@ interface AudioPlayerProps {
   audioUrl: string | null;
   categories: string[];
   tone: string;
+  localQuery: string;
   onAudioGenerated: (audioUrl: string) => void;
 }
 
-export const AudioPlayer = ({ audioUrl, categories, tone, onAudioGenerated }: AudioPlayerProps) => {
+export const AudioPlayer = ({ audioUrl, categories, tone, localQuery, onAudioGenerated }: AudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.7);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -47,6 +49,12 @@ export const AudioPlayer = ({ audioUrl, categories, tone, onAudioGenerated }: Au
       audioRef.current.volume = volume;
     }
   }, [volume]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
 
   const togglePlayPause = () => {
     if (!audioRef.current) return;
@@ -99,6 +107,15 @@ export const AudioPlayer = ({ audioUrl, categories, tone, onAudioGenerated }: Au
     const elevenLabsApiKey = import.meta.env.VITE_ELEVEN_LABS_API_KEY;
     const voiceId = import.meta.env.VITE_ELEVEN_LABS_VOICE_ID;
 
+    if (categories.includes("Local News") && !localQuery) {
+      toast({
+        title: "Location Required",
+        description: "Please enter a city or ZIP code for local news",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!newsApiKey || !openAiApiKey || !elevenLabsApiKey) {
       toast({
         title: "API Keys Required",
@@ -114,7 +131,7 @@ export const AudioPlayer = ({ audioUrl, categories, tone, onAudioGenerated }: Au
     try {
       // Step 1: Fetch news
       setGenerationProgress(25);
-      const news = await fetchNews(newsApiKey, categories);
+      const news = await fetchNews(newsApiKey, categories, localQuery);
       
       // Step 2: Generate script
       setGenerationProgress(50);
@@ -149,34 +166,64 @@ export const AudioPlayer = ({ audioUrl, categories, tone, onAudioGenerated }: Au
     description: string;
   }
 
-  const fetchNews = async (apiKey: string, categories: string[]): Promise<NewsArticle[]> => {
-    const allArticles: NewsArticle[] = [];
+  interface NewsSection {
+    category: string;
+    articles: NewsArticle[];
+  }
+
+  const fetchNews = async (
+    apiKey: string,
+    categories: string[],
+    localQuery: string
+  ): Promise<NewsSection[]> => {
+    const sections: NewsSection[] = [];
 
     for (const category of categories) {
-      const url = `https://newsapi.org/v2/top-headlines?language=en&pageSize=3&category=${encodeURIComponent(
-        category.toLowerCase()
-      )}&apiKey=${apiKey}`;
+      let url: string;
+
+      if (category === "Local News") {
+        url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(localQuery)}&language=en&pageSize=3&sortBy=publishedAt&apiKey=${apiKey}`;
+      } else {
+        url = `https://newsapi.org/v2/top-headlines?language=en&pageSize=3&category=${encodeURIComponent(
+          category.toLowerCase()
+        )}&apiKey=${apiKey}`;
+      }
+
       const res = await fetch(url);
       const data = await res.json();
+      const articles: NewsArticle[] = [];
       if (data.articles) {
-        (data.articles as Array<{ title: string; description: string; content?: string }>).forEach(
-          (a) => {
-            allArticles.push({
+        (data.articles as Array<{ title: string; description: string; content?: string }>)
+          .slice(0, 3)
+          .forEach((a) => {
+            articles.push({
               title: a.title,
               description: a.description || a.content || ""
             });
-          }
-        );
+          });
       }
+
+      const sectionTitle =
+        category === "Local News" && localQuery ? `${category} - ${localQuery}` : category;
+      sections.push({ category: sectionTitle, articles });
     }
 
-    return allArticles;
+    return sections;
   };
 
-  const generateScript = async (news: NewsArticle[], tone: string, apiKey: string): Promise<string> => {
+  const generateScript = async (
+    news: NewsSection[],
+    tone: string,
+    apiKey: string
+  ): Promise<string> => {
     const content = news
-      .map((item, idx) => `${idx + 1}. ${item.title} - ${item.description}`)
-      .join("\n");
+      .map((section) => {
+        const stories = section.articles
+          .map((item, idx) => `${idx + 1}. ${item.title} - ${item.description}`)
+          .join("\n");
+        return `${section.category}:\n${stories}`;
+      })
+      .join("\n\n");
 
     const toneInstructions = {
       funny: "You are News Nelson, a witty news anchor with a sharp sense of humor. Use clever wordplay, subtle irony, and tasteful mature humor. Keep jokes sophisticated but accessible. Focus on delivering real news while adding your signature wit.",
@@ -190,11 +237,11 @@ export const AudioPlayer = ({ audioUrl, categories, tone, onAudioGenerated }: Au
         role: "system",
         content: `${toneInstructions[tone as keyof typeof toneInstructions]} 
 
-Write a natural, conversational news summary. Include ONLY what News Nelson should say - no stage directions, sound effects, music cues, or script formatting. Just the actual spoken words. Start with a brief greeting, cover the most important stories from each category, and end with a simple sign-off. Keep it between 3-5 minutes of speaking time (about 450-750 words).`
+Write a natural, conversational news summary. Include ONLY what News Nelson should say - no stage directions, sound effects, music cues, or script formatting. Just the actual spoken words. Start with a brief greeting, then present each selected category in order, introducing the category name followed by its top 2-3 stories. End with a simple sign-off. Keep it between 3-5 minutes of speaking time (about 450-750 words).`
       },
       {
         role: "user",
-        content: `Please summarize these top news stories: ${content}`
+        content: `Please summarize these top news stories, covering each category in order with their top items:\n\n${content}`
       }
     ];
 
@@ -379,6 +426,19 @@ Write a natural, conversational news summary. Include ONLY what News Nelson shou
               step={0.1}
               className="flex-1"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Timer className="h-4 w-4" />
+            <Slider
+              value={[playbackSpeed]}
+              onValueChange={(value) => setPlaybackSpeed(value[0])}
+              min={0.5}
+              max={2}
+              step={0.25}
+              className="flex-1"
+            />
+            <span className="text-sm w-12 text-right">{playbackSpeed.toFixed(2)}x</span>
           </div>
         </div>
       </CardContent>
