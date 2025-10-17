@@ -24,12 +24,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Surface the error so it can be inspected during development
     console.error('Error caught by boundary:', error, errorInfo);
-    
-    // In production, you might want to log this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: logErrorToService(error, errorInfo);
-    }
   }
 
   resetError = () => {
@@ -69,13 +65,13 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError 
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground text-center">
-            We apologize for the inconvenience. The application encountered an unexpected error.
+            The app hit an unexpected error.
           </p>
           
           {isDevelopment && error && (
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-medium">
-                Error Details (Development Only)
+                Error details (development only)
               </summary>
               <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto">
                 {error.message}
@@ -87,7 +83,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError 
           <div className="flex flex-col gap-2">
             <Button onClick={resetError} className="w-full">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Try Again
+              Try again
             </Button>
             
             <Button 
@@ -95,12 +91,12 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError 
               onClick={() => window.location.reload()} 
               className="w-full"
             >
-              Reload Page
+              Reload page
             </Button>
           </div>
           
           <p className="text-xs text-muted-foreground text-center">
-            If the problem persists, please contact support.
+            If this keeps happening, please file an issue.
           </p>
         </CardContent>
       </Card>

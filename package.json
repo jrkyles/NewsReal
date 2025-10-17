@@ -2,7 +2,7 @@
   "name": "newsreal",
   "private": true,
   "version": "1.0.0",
-  "description": "AI-powered personalized news podcast generator",
+  "description": "Generate a personalized news podcast from selected categories and tone.",
   "type": "module",
   "scripts": {
     "dev": "vite",
