@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { CategorySelector } from "@/components/CategorySelector";
-import { ToneSelector } from "@/components/ToneSelector";
-import { AudioPlayer } from "@/components/AudioPlayer";
+import { CategorySelector, ToneSelector, AudioPlayer } from "@/components";
 import { Card, CardContent } from "@/components/ui/card";
 import { Newspaper } from "lucide-react";
+import { APP_CONFIG } from "@/constants";
 
 const Index = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedTone, setSelectedTone] = useState("friendly");
+  const [selectedTone, setSelectedTone] = useState<string>("friendly");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [localQuery, setLocalQuery] = useState("");
 
@@ -17,11 +16,11 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <h1 className="text-5xl font-bold text-red-500">NewsReal</h1>
+            <h1 className="text-5xl font-bold text-red-500">{APP_CONFIG.NAME}</h1>
             <Newspaper className="w-12 h-12 text-red-500" />
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Your personalized AI news anchor delivers the day's top stories in your preferred style
+            {APP_CONFIG.DESCRIPTION}
           </p>
         </div>
 
