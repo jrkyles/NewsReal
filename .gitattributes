@@ -1,0 +1,7 @@
+# Exclude vendored UI components and static assets from language stats
+src/components/ui/* linguist-vendored
+public/* linguist-vendored
+
+# De-emphasize frontend tests from language stats
+src/components/__tests__/* linguist-vendored
+src/hooks/__tests__/* linguist-vendored
