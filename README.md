@@ -1,6 +1,6 @@
 # NewsReal
 
-NewsReal is a small web app that generates a short spoken news briefing based on the categories you select and a tone of delivery. It fetches recent articles, drafts a script, and converts it to audio so you can listen in the browser.
+NewsReal generates a short spoken news briefing. The frontend calls a small FastAPI backend, which talks to NewsAPI, OpenAI, and ElevenLabs.
 
 ## Features
 
@@ -12,33 +12,38 @@ NewsReal is a small web app that generates a short spoken news briefing based on
 ## Requirements
 
 - Node.js 18+
-- Accounts and API keys for these services:
-  - NewsAPI (news data)
-  - OpenAI (script generation)
-  - ElevenLabs (text-to-speech)
+- Python 3.10+
+- API keys for NewsAPI, OpenAI, and ElevenLabs
 
 ## Setup
 
-1. Install dependencies:
-   
-   npm install
+1. Install frontend dependencies:
 
-2. Configure environment variables:
-   
-   cp .env.example .env
-   
-   Edit `.env` and set these values:
-   
-   VITE_NEWS_API_KEY=your_news_api_key
-   VITE_OPENAI_API_KEY=your_openai_api_key
-   VITE_ELEVEN_LABS_API_KEY=your_elevenlabs_api_key
-   VITE_ELEVEN_LABS_VOICE_ID=your_voice_id
+npm install
 
-3. Start the development server:
-   
-   npm run dev
+2. Create env files:
 
-Open http://localhost:8080 in your browser.
+cp .env.example .env
+
+Edit `.env` and point `VITE_API_BASE_URL` to your backend.
+
+Create a backend env (e.g., `backend/.env`) with:
+
+NEWS_API_KEY=...
+OPENAI_API_KEY=...
+ELEVENLABS_API_KEY=...
+ELEVENLABS_VOICE_ID=...
+
+3. Install backend dependencies and run the server:
+
+pip install -r requirements.txt
+uvicorn backend.main:app --reload --port 8000
+
+4. Start the frontend:
+
+npm run dev
+
+Open http://localhost:8080.
 
 ## Scripts
 
@@ -64,10 +69,17 @@ npm test
 - src/constants — shared constants
 - src/pages — page components
 
+## How it works
+
+- Frontend requests `/news`, `/script`, and `/audio` from the backend
+- Backend caches news and script results in memory for a short time
+- Backend coalesces identical in-flight requests to avoid duplicate upstream calls
+
 ## Notes
 
-- API keys should not be committed. Keep `.env` local.
-- External services may have rate limits and usage costs. Review their terms before use.
+- In-memory caching is per process. Use Redis for shared caching if needed.
+- Audio responses are streamed from ElevenLabs.
+- Keep API keys server-side only.
 
 ## License
 

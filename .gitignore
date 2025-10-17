@@ -19,6 +19,8 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+backend/.env
 
 # Editor directories and files
 .vscode/*
@@ -51,3 +53,14 @@ venv.bak/
 # Temporary folders
 tmp/
 temp/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenvs
+.env/
+.venv/
+venv/
+ENV/
